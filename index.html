@@ -1372,6 +1372,59 @@ function flagImg(iso, name, w = 80) {
   return `<img class="flag-img" src="https://flagcdn.com/w${s1x}/${iso}.png" srcset="https://flagcdn.com/w${s1x}/${iso}.png 1x, https://flagcdn.com/w${s2x}/${iso}.png 2x" alt="Bandera de ${name}" loading="lazy" width="${w}" height="${Math.round(w*0.75)}" onerror="this.onerror=null;this.src='https://flagcdn.com/w160/'+this.src.split('/').slice(-1)[0]">`;
 }
 
+// Plantillas (mejor esfuerzo, basadas en convocatorias recientes 2024-2025).
+// Índice 0 = Portero (#02). Índices 1..10 = jugadores #03..#12. Índices 11..17 = jugadores #14..#20.
+const PLAYERS = {
+  MEX: ['Guillermo Ochoa','Edson Álvarez','César Montes','Johan Vásquez','Jesús Gallardo','Luis Romo','Orbelín Pineda','Hirving Lozano','Santiago Giménez','Raúl Jiménez','Alexis Vega','Uriel Antuna','Kevin Álvarez','Roberto Alvarado','Luis Chávez','Erik Lira','Julián Quiñones','Henry Martín'],
+  RSA: ['Ronwen Williams','Percy Tau','Themba Zwane','Teboho Mokoena','Mothobi Mvala','Siyanda Xulu','Aubrey Modiba','Khuliso Mudau','Mihlali Mayambela','Lyle Foster','Thapelo Morena','Bongokuhle Hlongwane','Evidence Makgopa','Sphephelo Sithole','Mbekezeli Mbokazi','Iqraam Rayners','Patrick Maswanganyi','Oswin Appollis'],
+  KOR: ['Kim Seung-gyu','Son Heung-min','Lee Kang-in','Hwang Hee-chan','Kim Min-jae','Kim Young-gwon','Lee Jae-sung','Hwang In-beom','Jung Woo-young','Cho Gue-sung','Hwang Ui-jo','Kim Jin-su','Lee Ki-je','Seol Young-woo','Kim Moon-hwan','Park Yong-woo','Hong Hyun-seok','Oh Hyeon-gyu'],
+  CZE: ['Jindřich Staněk','Patrik Schick','Tomáš Souček','Vladimír Coufal','Tomáš Holeš','Adam Hložek','Antonín Barák','Lukáš Provod','Pavel Šulc','Mojmír Chytil','Robin Hranáč','David Doudera','David Jurásek','Ladislav Krejčí','Václav Černý','Matěj Jurásek','Lukáš Červ','Tomáš Chorý'],
+  CAN: ['Maxime Crépeau','Alphonso Davies','Jonathan David','Stephen Eustáquio','Tajon Buchanan','Cyle Larin','Jonathan Osorio','Sam Adekugbe','Richie Laryea','Liam Millar','Steven Vitória','Kamal Miller','Junior Hoilett','Mark-Anthony Kaye','Ismaël Koné','Derek Cornelius','Jacob Shaffelburg','Moïse Bombito'],
+  BIH: ['Ibrahim Šehić','Edin Džeko','Miralem Pjanić','Sead Kolašinac','Sead Hakšabanović','Rade Krunić','Ermedin Demirović','Smail Prevljak','Amer Gojak','Haris Tabaković','Adrian Leon Barišić','Nihad Mujakić','Anel Ahmedhodžić','Dennis Hadžikadunić','Benjamin Tahirović','Armin Gigović','Said Hamulić','Edin Bahtić'],
+  QAT: ['Meshaal Barsham','Akram Afif','Almoez Ali','Hassan Al-Haydos','Boualem Khoukhi','Karim Boudiaf','Tarek Salman','Bassam Al-Rawi','Abdulaziz Hatem','Ahmed Alaaeldin','Ismail Mohamad','Pedro Miguel','Mohammed Muntari','Yusuf Abdurisag','Homam Ahmed','Mohammed Waad','Khalid Munir','Mostafa Meshaal'],
+  SUI: ['Yann Sommer','Granit Xhaka','Manuel Akanji','Ricardo Rodríguez','Xherdan Shaqiri','Breel Embolo','Remo Freuler','Ruben Vargas','Fabian Schär','Silvan Widmer','Zeki Amdouni','Dan Ndoye','Michel Aebischer','Nico Elvedi','Renato Steffen','Fabian Rieder','Vincent Sierro','Filip Ugrinic'],
+  BRA: ['Alisson Becker','Vinícius Jr.','Neymar','Rodrygo','Marquinhos','Casemiro','Bruno Guimarães','Lucas Paquetá','Raphinha','Gabriel Jesus','Éder Militão','Danilo','Gabriel Magalhães','Lucas Beraldo','Bruno Henrique','Endrick','João Gomes','Andreas Pereira'],
+  MAR: ['Yassine Bounou','Achraf Hakimi','Hakim Ziyech','Sofyan Amrabat','Youssef En-Nesyri','Romain Saïss','Noussair Mazraoui','Azzedine Ounahi','Selim Amallah','Bilal El Khannouss','Brahim Díaz','Ilias Akhomach','Abdessamad Ezzalzouli','Amir Richardson','Eliesse Ben Seghir','Nayef Aguerd','Munir El Haddadi','Walid Cheddira'],
+  HAI: ['Johny Placide','Duckens Nazon','Frantzdy Pierrot','Carlens Arcus','Steeven Saba','Ricardo Adé','Derrick Etienne Jr.','Jean Eudes Maurice','Wilde-Donald Guerrier','Carl Sainté','Mondy Prunier','Hervé Bazile','Jean Marcelin','Garven Metusala','Maxime Roby','Christopher Attys','Bryan Alceus','Don Deedson Louicius'],
+  SCO: ['Angus Gunn','Andy Robertson','Scott McTominay','John McGinn','Kieran Tierney','Ryan Christie','Callum McGregor','Stuart Armstrong','Lyndon Dykes','Che Adams','Anthony Ralston','Grant Hanley','Jack Hendry','Billy Gilmour','Scott McKenna','Tommy Conway','Lawrence Shankland','Ryan Porteous'],
+  USA: ['Matt Turner','Christian Pulisic','Tyler Adams','Weston McKennie','Tim Weah','Sergiño Dest','Yunus Musah','Folarin Balogun','Gio Reyna','Antonee Robinson','Chris Richards','Tim Ream','Brenden Aaronson','Ricardo Pepi','Malik Tillman','Cameron Carter-Vickers','Joe Scally','Haji Wright'],
+  PAR: ['Antony Silva','Miguel Almirón','Ángel Romero','Diego Gómez','Damián Bobadilla','Andrés Cubas','Mathías Villasanti','Gustavo Velázquez','Junior Alonso','Omar Alderete','Adam Bareiro','Julio Enciso','Antonio Sanabria','Ramón Sosa','Mathías Galarza','Iván Cavallo','Hernesto Caballero','Diego Torres'],
+  AUS: ['Mathew Ryan','Harry Souttar','Aaron Mooy','Mathew Leckie','Mitchell Duke','Awer Mabil','Riley McGree','Jackson Irvine','Connor Metcalfe','Keanu Baccus','Ajdin Hrustic','Craig Goodwin','Aziz Behich','Cameron Burgess','Kye Rowles','Bruno Fornaroli','Jordy Bos','Nestory Irankunda'],
+  TUR: ['Mert Günok','Hakan Çalhanoğlu','Arda Güler','Kenan Yıldız','Kerem Aktürkoğlu','Merih Demiral','Çağlar Söyüncü','Zeki Çelik','Ferdi Kadıoğlu','Orkun Kökçü','İsmail Yüksek','Salih Özcan','Yusuf Yazıcı','Barış Alper Yılmaz','Cenk Tosun','Semih Kılıçsoy','Abdülkerim Bardakcı','Samet Akaydın'],
+  GER: ['Manuel Neuer','Joshua Kimmich','Toni Kroos','İlkay Gündoğan','Jamal Musiala','Florian Wirtz','Leroy Sané','Kai Havertz','Niclas Füllkrug','Antonio Rüdiger','Jonathan Tah','Robin Koch','Maximilian Mittelstädt','David Raum','Pascal Groß','Robert Andrich','Deniz Undav','Chris Führich'],
+  CUW: ['Eloy Room','Leandro Bacuna','Cuco Martina','Juninho Bacuna','Roly Bonevacia','Tahith Chong','Sontje Hansen','Brandley Kuwas','Vurnon Anita','Gervane Kastaneer','Rangelo Janga','Jurich Carolina','Sherel Floranus','Kenji Gorré','Jürgen Locadia','Charlison Benschop','Quenten Martinus','Anthony van den Hurk'],
+  CIV: ['Yahia Fofana','Sébastien Haller','Franck Kessié','Wilfried Zaha','Eric Bailly','Nicolas Pépé','Serge Aurier','Ibrahim Sangaré','Jean Michaël Seri','Simon Adingra','Jean-Philippe Krasso','Max-Alain Gradel','Willy Boly','Evan Ndicka','Ghislain Konan','Hamed Junior Traorè','Christian Kouamé','Karim Konaté'],
+  ECU: ['Hernán Galíndez','Enner Valencia','Moisés Caicedo','Pervis Estupiñán','Piero Hincapié','Félix Torres','Gonzalo Plata','Ángel Mena','Jhegson Méndez','Romario Ibarra','Kevin Rodríguez','Kendry Páez','Willian Pacho','Joel Ordóñez','Alan Minda','Jeremy Sarmiento','John Yeboah','Patrickson Delgado'],
+  NED: ['Bart Verbruggen','Virgil van Dijk','Frenkie de Jong','Memphis Depay','Cody Gakpo','Xavi Simons','Tijjani Reijnders','Denzel Dumfries','Nathan Aké','Stefan de Vrij','Donyell Malen','Wout Weghorst','Jeremie Frimpong','Joey Veerman','Daley Blind','Brian Brobbey','Justin Kluivert','Quinten Timber'],
+  JPN: ['Zion Suzuki','Wataru Endo','Takefusa Kubo','Kaoru Mitoma','Daichi Kamada','Takumi Minamino','Ritsu Doan','Hidemasa Morita','Ko Itakura','Takehiro Tomiyasu','Daizen Maeda','Ayase Ueda','Junya Ito','Mao Hosoya','Hiroki Sakai','Yukinari Sugawara','Reo Hatate','Keito Nakamura'],
+  SWE: ['Robin Olsen','Alexander Isak','Viktor Gyökeres','Dejan Kulusevski','Emil Forsberg','Anthony Elanga','Albin Ekdal','Mattias Svanberg','Jens Cajuste','Victor Lindelöf','Isak Hien','Hugo Larsson','Lucas Bergvall','Daniel Svensson','Gabriel Gudmundsson','Yasin Ayari','Jesper Karlström','Jesper Karlsson'],
+  TUN: ['Aymen Dahmen','Wahbi Khazri','Youssef Msakni','Ellyes Skhiri','Hannibal Mejbri','Mohamed Dräger','Naïm Sliti','Anis Slimane','Issam Jebali','Seifeddine Jaziri','Ali Maaloul','Yassine Meriah','Montassar Talbi','Aïssa Laïdouni','Ferjani Sassi','Ghaylene Chaalali','Hamza Rafia','Hazem Mastouri'],
+  BEL: ['Thibaut Courtois','Kevin De Bruyne','Romelu Lukaku','Jérémy Doku','Youri Tielemans','Leandro Trossard','Charles De Ketelaere','Amadou Onana','Axel Witsel','Jan Vertonghen','Wout Faes','Timothy Castagne','Arthur Theate','Loïs Openda','Johan Bakayoko','Dodi Lukebakio','Maxim De Cuyper','Aster Vranckx'],
+  EGY: ['Mohamed El Shenawy','Mohamed Salah','Mostafa Mohamed','Trezeguet','Omar Marmoush','Mahmoud Hassan','Tarek Hamed','Mohamed Elneny','Hamdi Fathi','Ahmed Hegazy','Mahmoud Hamdy','Ahmed Sayed','Ibrahim Adel','Akram Tawfik','Mostafa Fathi','Mohamed Hany','Karim Hafez','Emam Ashour'],
+  IRN: ['Alireza Beiranvand','Sardar Azmoun','Mehdi Taremi','Alireza Jahanbakhsh','Saman Ghoddos','Karim Ansarifard','Saeid Ezatolahi','Ahmad Nourollahi','Milad Mohammadi','Morteza Pouraliganji','Shojae Khalilzadeh','Ali Gholizadeh','Mehdi Torabi','Hossein Kanaani','Saeid Sadeghi','Mohammad Mohebbi','Omid Ebrahimi','Ramin Rezaeian'],
+  NZL: ['Oliver Sail','Chris Wood','Liberato Cacace','Marko Stamenić','Sarpreet Singh','Joe Bell','Matt Garbett','Bill Tuiloma','Tim Payne','Michael Boxall','Kosta Barbarouses','Logan Rogerson','Callum McCowatt','Storm Roux','Ben Waine','Eli Just','Alex Paulsen','Tyler Bindon'],
+  ESP: ['Unai Simón','Lamine Yamal','Nico Williams','Rodri','Pedri','Gavi','Mikel Merino','Dani Olmo','Álvaro Morata','Aymeric Laporte','Robin Le Normand','Daniel Carvajal','Marc Cucurella','Fabián Ruiz','Joselu','Mikel Oyarzabal','Ferran Torres','Fermín López'],
+  CPV: ['Vozinha','Ryan Mendes','Garry Rodrigues','Bebé','Bryan Teixeira','Patrick Andrade','Kenny Rocha','Stopira','Roberto Lopes','Steven Fortes','Sidny Cabral','Diney','Logan Costa','Carlos Ponck','Dylan Tavares','Yannick Semedo','Willy Semedo','Gilson Tavares'],
+  KSA: ['Mohammed Al-Owais','Salem Al-Dawsari','Saleh Al-Shehri','Firas Al-Buraikan','Mohamed Kanno','Salman Al-Faraj','Ali Al-Bulaihi','Yasser Al-Shahrani','Hassan Tambakti','Abdulelah Al-Amri','Sultan Al-Ghannam','Saud Abdulhamid','Abdullah Madu','Riyadh Sharahili','Faisal Al-Ghamdi','Mohammed Al-Breik','Hattan Bahebri','Abdulrahman Ghareeb'],
+  URU: ['Sergio Rochet','Federico Valverde','Darwin Núñez','Ronald Araújo','Rodrigo Bentancur','Manuel Ugarte','Luis Suárez','José María Giménez','Mathías Olivera','Nahitan Nández','Maximiliano Araújo','Facundo Pellistri','Nicolás de la Cruz','Sebastián Cáceres','Maximiliano Gómez','Agustín Canobbio','Brian Rodríguez','Rodrigo Zalazar'],
+  FRA: ['Mike Maignan','Kylian Mbappé','Antoine Griezmann','Aurélien Tchouaméni','Eduardo Camavinga','Ousmane Dembélé','Theo Hernández','Jules Koundé','William Saliba','Ibrahima Konaté','Marcus Thuram','Randal Kolo Muani','Bradley Barcola','Adrien Rabiot','N\'Golo Kanté','Jonathan Clauss','Kingsley Coman','Olivier Giroud'],
+  SEN: ['Édouard Mendy','Sadio Mané','Kalidou Koulibaly','Idrissa Gueye','Ismaïla Sarr','Boulaye Dia','Pape Matar Sarr','Krépin Diatta','Pape Gueye','Nicolas Jackson','Iliman Ndiaye','Habib Diarra','Pape Cheikh Diop','Abdoulaye Seck','Cheikhou Kouyaté','Lamine Camara','Habib Diallo','El Hadji Malick Diouf'],
+  IRQ: ['Jalal Hassan','Aymen Hussein','Mohanad Ali','Ali Adnan','Sherko Karim','Ibrahim Bayesh','Bashar Resan','Amjad Attwan','Hussein Ali Al-Saedi','Hammadi Ahmed','Mustafa Saadoon','Manaf Younis','Saad Natiq','Frans Putros','Merchas Doski','Ali Al-Hamadi','Zidane Iqbal','Youssef Amyn'],
+  NOR: ['Ørjan Nyland','Erling Haaland','Martin Ødegaard','Alexander Sørloth','Antonio Nusa','Patrick Berg','Sander Berge','Birger Meling','Jørgen Strand Larsen','Kristoffer Ajer','Stefan Strandberg','Leo Østigård','Fredrik Aursnes','Mohamed Elyounoussi','Oscar Bobb','Aron Dønnum','Andreas Schjelderup','Julian Ryerson'],
+  ARG: ['Emiliano Martínez','Lionel Messi','Lautaro Martínez','Julián Álvarez','Rodrigo De Paul','Enzo Fernández','Alexis Mac Allister','Cristian Romero','Lisandro Martínez','Nicolás Otamendi','Nahuel Molina','Marcos Acuña','Ángel Di María','Leandro Paredes','Giovani Lo Celso','Nicolás González','Ángel Correa','Alejandro Garnacho'],
+  ALG: ['Raïs M\'Bolhi','Riyad Mahrez','Islam Slimani','Saïd Benrahma','Ismaël Bennacer','Sofiane Feghouli','Youcef Belaïli','Aïssa Mandi','Ramy Bensebaini','Yacine Brahimi','Houssem Aouar','Baghdad Bounedjah','Adam Ounas','Andy Delort','Adam Zorgane','Amine Gouiri','Anis Hadj-Moussa','Mohamed Amine Tougai'],
+  AUT: ['Patrick Pentz','David Alaba','Marko Arnautović','Marcel Sabitzer','Konrad Laimer','Christoph Baumgartner','Xaver Schlager','Florian Grillitsch','Stefan Posch','Maximilian Wöber','Nicolas Seiwald','Michael Gregoritsch','Romano Schmid','Patrick Wimmer','Marko Friedl','Gernot Trauner','Phillipp Mwene','Junior Adamu'],
+  JOR: ['Yazeed Abulaila','Mousa Tamari','Yazan Al-Naimat','Mahmoud Al-Mardi','Ehsan Haddad','Saleh Rateb','Noor Al-Rawabdeh','Ali Olwan','Mahmoud Al-Mawas','Nizar Al-Rashdan','Khaled Saif','Ali Al-Saadi','Tareq Khattab','Yazan Al-Arab','Salem Al-Ajalin','Ahmed Ersan','Hamza Al-Dardour','Ibrahim Sadeh'],
+  POR: ['Diogo Costa','Cristiano Ronaldo','Bruno Fernandes','Bernardo Silva','Rúben Dias','João Cancelo','Vitinha','Rafael Leão','Diogo Jota','João Félix','Pepe','Nuno Mendes','Otávio','Gonçalo Ramos','João Palhinha','Rúben Neves','Diogo Dalot','Pedro Neto'],
+  COD: ['Lionel Mpasi','Cédric Bakambu','Yoane Wissa','Chancel Mbemba','Théo Bongonda','Silas Katompa','Arthur Masuaku','Gaël Kakuta','Samuel Moutoussamy','Charles Pickel','Axel Tuanzebe','Dylan Bahamboula','Meschack Elia','Fiston Mayele','Grady Diangana','Glody Lilepo','Edo Kayembe','Noah Sadiki'],
+  UZB: ['Utkir Yusupov','Eldor Shomurodov','Jaloliddin Masharipov','Odiljon Hamrobekov','Otabek Shukurov','Igor Sergeev','Khojimat Erkinov','Sardor Mirzaev','Khusayin Norchaev','Rustam Ashurmatov','Abdukodir Khusanov','Akramjon Komilov','Sherzod Nasrullaev','Bobur Abdikholikov','Diyor Kholmatov','Abbosbek Fayzullaev','Azizbek Turgunboev','Otabek Bozorov'],
+  COL: ['Camilo Vargas','James Rodríguez','Luis Díaz','Jhon Durán','Daniel Muñoz','Davinson Sánchez','Yerry Mina','Mateus Uribe','Jefferson Lerma','Richard Ríos','Johan Mojica','Santiago Arias','Jorge Carrascal','Juan Quintero','Jhon Arias','Rafael Santos Borré','Mateo Cassierra','Kevin Castaño'],
+  ENG: ['Jordan Pickford','Harry Kane','Jude Bellingham','Phil Foden','Bukayo Saka','Declan Rice','Marcus Rashford','Cole Palmer','Kyle Walker','Kieran Trippier','John Stones','Harry Maguire','Trent Alexander-Arnold','Conor Gallagher','Ezri Konsa','Anthony Gordon','Eberechi Eze','Ollie Watkins'],
+  CRO: ['Dominik Livaković','Luka Modrić','Mateo Kovačić','Marcelo Brozović','Andrej Kramarić','Bruno Petković','Ivan Perišić','Mario Pašalić','Joško Gvardiol','Borna Sosa','Josip Juranović','Marco Pašalić','Lovro Majer','Nikola Vlašić','Josip Stanišić','Petar Sučić','Martin Baturina','Luka Sučić'],
+  GHA: ['Lawrence Ati-Zigi','Mohammed Kudus','Iñaki Williams','Thomas Partey','Jordan Ayew','Antoine Semenyo','Ernest Nuamah','Alidu Seidu','Tariq Lamptey','Daniel Amartey','Mohammed Salisu','Jonathan Mensah','Kamaldeen Sulemana','André Ayew','Fatawu Issahaku','Forson Amankwah','Brandon Thomas-Asante','Joseph Paintsil'],
+  PAN: ['Orlando Mosquera','Aníbal Godoy','Adalberto Carrasquilla','Cecilio Waterman','Ismael Díaz','José Fajardo','Édgar Bárcenas','Alberto Quintero','Eric Davis','Andrés Andrade','Roderick Miller','Michael Murillo','Fidel Escobar','César Yanis','Iván Anderson','Tomás Rodríguez','Rolando Blackburn','Jiovany Ramos']
+};
+
 // Datos de las secciones especiales
 
 // Página 0: PANINI (1 sola estampa)
@@ -1476,39 +1529,38 @@ function buildSections() {
   });
 
   // ============ EQUIPOS POR GRUPO (orden de páginas oficial) ============
-  // Cada equipo: 20 stickers (1 escudo + 1 plantel + 18 jugadores)
+  // Cada equipo: 20 stickers
+  //   #01 Escudo · #02 Portero · #03-12 jugadores 1-10 · #13 Plantel · #14-20 jugadores 11-17
   // Después del Grupo F insertamos Coca-Cola (págs 56-57)
   Object.entries(GROUPS).forEach(([letter, teams]) => {
     teams.forEach(team => {
       const teamStickers = [];
+      const roster = PLAYERS[team.code] || [];
+      const codeNum = i => `${team.code}-${String(i).padStart(2, '0')}`;
 
-      // Sticker 01: Escudo (foil)
-      teamStickers.push({
-        id: n,
-        code: `${team.code}-01`,
-        label: 'Escudo',
-        type: 'foil'
-      });
-      n++;
-
-      // Sticker 02: Plantel
-      teamStickers.push({
-        id: n,
-        code: `${team.code}-02`,
-        label: 'Plantel completo',
-        type: 'base'
-      });
-      n++;
-
-      // Stickers 03-20: 18 jugadores
-      for (let p = 1; p <= 18; p++) {
+      // #01: Escudo (foil)
+      teamStickers.push({ id: n++, code: codeNum(1), label: 'Escudo', type: 'foil' });
+      // #02: Portero
+      teamStickers.push({ id: n++, code: codeNum(2), label: roster[0] || 'Portero', type: 'foil' });
+      // #03-12: jugadores 1-10
+      for (let p = 1; p <= 10; p++) {
         teamStickers.push({
-          id: n,
-          code: `${team.code}-${String(p + 2).padStart(2, '0')}`,
-          label: `Jugador ${p}`,
+          id: n++,
+          code: codeNum(p + 2),
+          label: roster[p] || `Jugador ${p}`,
           type: 'base'
         });
-        n++;
+      }
+      // #13: Plantel completo
+      teamStickers.push({ id: n++, code: codeNum(13), label: 'Plantel completo', type: 'base' });
+      // #14-20: jugadores 11-17
+      for (let p = 11; p <= 17; p++) {
+        teamStickers.push({
+          id: n++,
+          code: codeNum(p + 3),
+          label: roster[p] || `Jugador ${p}`,
+          type: 'base'
+        });
       }
 
       sections.push({
