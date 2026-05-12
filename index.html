@@ -1940,11 +1940,10 @@ function attachEvents() {
     });
   });
 
-  // Click sobre la zona superior de la estampita (label/num) toggle
-  document.querySelectorAll('.sticker [data-action="toggle"]').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const stickerEl = el.closest('.sticker');
+  // Click en cualquier parte de la tarjeta (excepto botones +/−) toggle owned
+  document.querySelectorAll('.sticker').forEach(stickerEl => {
+    stickerEl.addEventListener('click', (e) => {
+      if (e.target.closest('.dupe-btn')) return;
       const id = parseInt(stickerEl.dataset.id);
       toggleOwned(id);
       saveState();
