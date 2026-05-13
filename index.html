@@ -1592,7 +1592,7 @@ function buildSections() {
       // #01: Escudo (foil)
       teamStickers.push({ id: n++, code: codeNum(1), label: 'Escudo', type: 'foil' });
       // #02: Portero
-      teamStickers.push({ id: n++, code: codeNum(2), label: roster[0] || 'Portero', type: 'foil' });
+      teamStickers.push({ id: n++, code: codeNum(2), label: roster[0] || 'Portero', type: 'base' });
       // #03-12: jugadores 1-10
       for (let p = 1; p <= 10; p++) {
         teamStickers.push({
@@ -1602,8 +1602,8 @@ function buildSections() {
           type: 'base'
         });
       }
-      // #13: Plantel completo
-      teamStickers.push({ id: n++, code: codeNum(13), label: 'Plantel completo', type: 'base' });
+      // #13: Plantel completo (foil)
+      teamStickers.push({ id: n++, code: codeNum(13), label: 'Plantel completo', type: 'foil' });
       // #14-20: jugadores 11-17
       for (let p = 11; p <= 17; p++) {
         teamStickers.push({
