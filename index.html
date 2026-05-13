@@ -23,6 +23,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://flagcdn.com">
+<link rel="preconnect" href="https://www.gstatic.com">
+<script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,700&display=swap" rel="stylesheet">
 <style>
   /* ===== PALETA OFICIAL MUNDIAL 2026 (versión clara) ===== */
@@ -321,9 +324,53 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     align-items: center;
   }
+  .sync-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 28px;
+    padding: 10px 14px;
+    background: rgba(26, 34, 56, 0.04);
+    border: 2px dashed rgba(26, 34, 56, 0.18);
+    border-radius: 12px;
+  }
+  .sync-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .sync-input {
+    flex: 1;
+    min-width: 200px;
+    border: 2px solid rgba(26, 34, 56, 0.18);
+    background: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .sync-input:focus { outline: none; border-color: var(--teal); }
+  .sync-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .sync-offline { background: rgba(26, 34, 56, 0.08); color: var(--ink-soft); }
+  .sync-connecting { background: #fef3c7; color: #92400e; }
+  .sync-connected { background: #d1fae5; color: #065f46; }
+  .sync-error { background: #fee2e2; color: #991b1b; }
   .search-wrap {
     flex: 1;
     min-width: 240px;
@@ -1171,6 +1218,13 @@
     <button class="action-btn" id="expandAll">Expandir</button>
     <button class="action-btn" id="collapseAll">Colapsar</button>
     <button class="action-btn danger" id="resetBtn">Reset</button>
+  </div>
+
+  <div class="sync-bar">
+    <span class="sync-label">🔗 Sala</span>
+    <input id="roomInput" class="sync-input" placeholder="ej. familia-glez (compartir entre dispositivos)" autocomplete="off">
+    <button id="roomBtn" class="action-btn">Conectar</button>
+    <span id="roomStatus" class="sync-status sync-offline">Solo local</span>
   </div>
 
   <div id="sectionsContainer"></div>
@@ -2100,9 +2154,143 @@ if (brandSpan) {
   brandSpan.textContent = `FIFA World Cup 2026™ · We Are 26 · ${TOTAL_STICKERS} stickers`;
 }
 
+/* ============================================================
+   SINCRONIZACIÓN EN VIVO (Firebase Realtime Database)
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB5fUvL0QvO3JroHQymzqXL3QGlaGg2fLM",
+  authDomain: "album-mundial-26-317b4.firebaseapp.com",
+  databaseURL: "https://album-mundial-26-317b4-default-rtdb.firebaseio.com",
+  projectId: "album-mundial-26-317b4",
+  storageBucket: "album-mundial-26-317b4.firebasestorage.app",
+  messagingSenderId: "27203078665",
+  appId: "1:27203078665:web:42060a3a10282bb50646d8"
+};
+const ROOM_KEY = 'wc2026-album-room';
+let fbApp = null, fbDb = null, roomRef = null, roomCode = '', applyingRemote = false;
+
+function setRoomStatus(state, text) {
+  const el = document.getElementById('roomStatus');
+  el.className = 'sync-status sync-' + state;
+  el.textContent = text;
+}
+
+function sanitizeRoom(code) {
+  return (code || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-').slice(0, 40);
+}
+
+function ensureFirebase() {
+  if (fbApp) return true;
+  if (typeof firebase === 'undefined') return false;
+  try {
+    fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+    fbDb = firebase.database();
+    return true;
+  } catch (e) {
+    console.error('Firebase init falló', e);
+    setRoomStatus('error', 'Error');
+    return false;
+  }
+}
+
+function joinRoom(code) {
+  leaveRoom();
+  code = sanitizeRoom(code);
+  if (!code) return;
+  if (!ensureFirebase()) {
+    showToast('Firebase aún no carga, intenta de nuevo en un segundo');
+    return;
+  }
+  roomCode = code;
+  localStorage.setItem(ROOM_KEY, code);
+  document.getElementById('roomInput').value = code;
+  setRoomStatus('connecting', 'Conectando…');
+  roomRef = fbDb.ref('rooms/' + code + '/counts');
+
+  roomRef.once('value').then(snap => {
+    if (!snap.exists()) {
+      // Sala vacía: subimos lo local como punto de partida.
+      pushToRoom();
+    }
+    setRoomStatus('connected', '● En vivo · ' + code);
+  }).catch(err => {
+    console.error(err);
+    setRoomStatus('error', 'Error');
+    showToast('No se pudo conectar a la sala');
+  });
+
+  roomRef.on('value', snap => {
+    if (!snap.exists()) return;
+    const val = snap.val() || {};
+    applyingRemote = true;
+    counts = new Map(Object.entries(val).map(([k, v]) => [parseInt(k, 10), Number(v)]));
+    applyingRemote = false;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...counts]));
+    } catch (e) {}
+    renderAll();
+  });
+}
+
+function leaveRoom() {
+  if (roomRef) { roomRef.off(); roomRef = null; }
+  roomCode = '';
+  localStorage.removeItem(ROOM_KEY);
+  setRoomStatus('offline', 'Solo local');
+  const btn = document.getElementById('roomBtn');
+  if (btn) btn.textContent = 'Conectar';
+}
+
+function pushToRoom() {
+  if (!roomRef || applyingRemote) return;
+  roomRef.set(Object.fromEntries([...counts])).catch(err => {
+    console.error(err);
+    setRoomStatus('error', 'Error al subir');
+  });
+}
+
+document.getElementById('roomBtn').addEventListener('click', () => {
+  const btn = document.getElementById('roomBtn');
+  if (roomRef) {
+    leaveRoom();
+  } else {
+    const code = document.getElementById('roomInput').value;
+    if (!sanitizeRoom(code)) {
+      showToast('Pon un código de sala (letras, números o guiones)');
+      return;
+    }
+    joinRoom(code);
+    btn.textContent = 'Desconectar';
+  }
+});
+document.getElementById('roomInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('roomBtn').click();
+});
+
+// Engancha saveState para que también empuje a la sala
+const _saveStateLocal = saveState;
+saveState = function() {
+  _saveStateLocal();
+  pushToRoom();
+};
+
 // INIT
 loadState();
 renderAll();
+
+// Auto-rejoin si había sala guardada (espera a que el SDK termine de cargar)
+const savedRoom = localStorage.getItem(ROOM_KEY);
+if (savedRoom) {
+  const tryJoin = () => {
+    if (typeof firebase !== 'undefined') {
+      joinRoom(savedRoom);
+      document.getElementById('roomBtn').textContent = 'Desconectar';
+    } else {
+      setTimeout(tryJoin, 200);
+    }
+  };
+  tryJoin();
+}
 </script>
 </body>
 </html>
