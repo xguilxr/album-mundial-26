@@ -400,6 +400,41 @@
     background: rgba(255,255,255,0.14);
     margin: 3px 6px;
   }
+  .side-nav-pct {
+    padding: 4px 8px 6px;
+    text-align: center;
+    color: #fdf8ec;
+  }
+  .side-nav-pct-value {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 15px;
+    color: var(--sun);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .side-nav-pct-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .side-nav-pct-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sun), var(--rose));
+    transition: width 0.4s;
+  }
+  .side-nav-dupes {
+    justify-content: center;
+    color: var(--coral, #ff6b6b);
+    background: rgba(255, 107, 107, 0.08);
+  }
+  .side-nav-dupes:hover { background: rgba(255, 107, 107, 0.2); }
+  .side-nav-dupes .nav-icon { color: var(--coral, #ff6b6b); font-size: 16px; }
+  .side-nav-dupes-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+  }
   @media (max-width: 768px) {
     .side-nav { left: 6px; padding: 6px 3px; border-radius: 10px; }
     .side-nav-item { padding: 4px 5px; font-size: 10px; gap: 4px; }
@@ -1985,6 +2020,17 @@ function renderAll() {
 function renderSideNav() {
   const nav = document.getElementById('sideNav');
   if (!nav) return;
+  const owned = totalOwned();
+  const pct = TOTAL_STICKERS > 0 ? (owned / TOTAL_STICKERS) * 100 : 0;
+  let withDupes = 0;
+  counts.forEach(v => { if (v > 1) withDupes++; });
+
+  const headerHtml = `
+    <div class="side-nav-pct" title="${owned} de ${TOTAL_STICKERS} estampas">
+      <div class="side-nav-pct-value">${pct.toFixed(0)}%</div>
+      <div class="side-nav-pct-bar"><div class="side-nav-pct-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="side-nav-divider"></div>`;
   const items = [];
   items.push({ kind: 'icon', icon: '<img src="copa.png" alt="">', target: 'nav-opening', title: 'Apertura · Págs. 0-3' });
   items.push({ kind: 'divider' });
@@ -2004,7 +2050,7 @@ function renderSideNav() {
   items.push({ kind: 'divider' });
   items.push({ kind: 'icon', icon: '<img src="copa.png" alt="">', target: 'nav-history', title: 'World Cup History' });
 
-  nav.innerHTML = items.map(it => {
+  const middleHtml = items.map(it => {
     if (it.kind === 'divider') return '<div class="side-nav-divider"></div>';
     if (it.kind === 'icon') {
       return `<button class="side-nav-item" data-target="${it.target}" title="${it.title}"><span class="nav-icon">${it.icon}</span></button>`;
@@ -2012,12 +2058,29 @@ function renderSideNav() {
     return `<button class="side-nav-item" data-target="${it.target}" title="Grupo ${it.letter}"><span class="nav-letter">${it.letter}</span><span class="nav-flags">${it.flags}</span></button>`;
   }).join('');
 
-  nav.querySelectorAll('.side-nav-item').forEach(btn => {
+  const footerHtml = `
+    <div class="side-nav-divider"></div>
+    <button class="side-nav-item side-nav-dupes" id="sideNavDupes" title="Ver mis repetidas">
+      <span class="nav-icon">⇄</span>
+      <span class="side-nav-dupes-count">${withDupes}</span>
+    </button>`;
+
+  nav.innerHTML = headerHtml + middleHtml + footerHtml;
+
+  nav.querySelectorAll('.side-nav-item[data-target]').forEach(btn => {
     btn.addEventListener('click', () => {
       const el = document.getElementById(btn.dataset.target);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
+  const dupesBtn = document.getElementById('sideNavDupes');
+  if (dupesBtn) {
+    dupesBtn.addEventListener('click', () => {
+      const filterBtn = document.querySelector('.filter-btn[data-filter="dupes"]');
+      if (filterBtn) filterBtn.click();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 }
 
 function updateStats() {
