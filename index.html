@@ -327,6 +327,85 @@
     margin-bottom: 16px;
     align-items: center;
   }
+  .side-nav {
+    position: fixed;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 90;
+    background: rgba(26, 34, 56, 0.94);
+    border-radius: 14px;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    max-height: 88vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .side-nav::-webkit-scrollbar { width: 4px; }
+  .side-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+  .side-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: #fdf8ec;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    transition: background 0.12s, transform 0.12s;
+    white-space: nowrap;
+  }
+  .side-nav-item:hover { background: rgba(255,255,255,0.14); transform: translateX(-2px); }
+  .side-nav-item .nav-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 13px;
+    color: var(--sun);
+  }
+  .side-nav-item .nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    font-size: 14px;
+  }
+  .side-nav-item .nav-icon img { width: 18px; height: 18px; object-fit: contain; }
+  .side-nav-item .nav-flags {
+    display: flex;
+    gap: 2px;
+  }
+  .side-nav-item .nav-flags img {
+    width: 14px;
+    height: 10px;
+    object-fit: cover;
+    border-radius: 1.5px;
+    box-shadow: 0 0 0 0.5px rgba(0,0,0,0.4);
+  }
+  .side-nav-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.14);
+    margin: 3px 6px;
+  }
+  @media (max-width: 768px) {
+    .side-nav { right: 4px; padding: 6px 3px; border-radius: 10px; }
+    .side-nav-item { padding: 4px 5px; font-size: 10px; gap: 4px; }
+    .side-nav-item .nav-letter { width: 14px; font-size: 11px; }
+    .side-nav-item .nav-icon { width: 14px; font-size: 12px; }
+    .side-nav-item .nav-icon img { width: 14px; height: 14px; }
+    .side-nav-item .nav-flags img { width: 10px; height: 8px; }
+  }
+
   .sync-bar {
     display: flex;
     flex-wrap: wrap;
@@ -1223,6 +1302,8 @@
     <span id="roomStatus" class="sync-status sync-offline">Solo local</span>
   </div>
 
+  <nav class="side-nav" id="sideNav" aria-label="Navegación rápida"></nav>
+
   <div id="sectionsContainer"></div>
 
   <!-- ===== INVENTARIO COMPLETO ===== -->
@@ -1768,6 +1849,7 @@ function renderAll() {
       ).join('');
       const banner = document.createElement('div');
       banner.className = 'group-banner';
+      banner.id = 'nav-' + section.groupId;
       banner.innerHTML = `
         <div class="group-banner-letter">${letter}</div>
         <div class="group-banner-title">Grupo ${letter}</div>
@@ -1778,6 +1860,7 @@ function renderAll() {
     } else if (section.groupId === 'extras-coca' && lastGroupId !== 'extras-coca') {
       const banner = document.createElement('div');
       banner.className = 'group-banner banner-coca';
+      banner.id = 'nav-extras-coca';
       banner.innerHTML = `
         <div class="group-banner-letter coca-letter">★</div>
         <div class="group-banner-title">Coca-Cola Stars</div>
@@ -1788,6 +1871,7 @@ function renderAll() {
     } else if (section.groupId === 'history' && lastGroupId !== 'history') {
       const banner = document.createElement('div');
       banner.className = 'group-banner banner-history';
+      banner.id = 'nav-history';
       banner.innerHTML = `
         <div class="group-banner-letter history-letter">${TROPHY_SVG_SMALL}</div>
         <div class="group-banner-title">World Cup History</div>
@@ -1798,6 +1882,7 @@ function renderAll() {
     } else if (section.groupId === 'opening' && lastGroupId !== 'opening') {
       const banner = document.createElement('div');
       banner.className = 'group-banner banner-opening';
+      banner.id = 'nav-opening';
       banner.innerHTML = `
         <div class="group-banner-letter opening-letter">26</div>
         <div class="group-banner-title">We Are 26</div>
@@ -1886,7 +1971,46 @@ function renderAll() {
 
   updateStats();
   renderInventory();
+  renderSideNav();
   attachEvents();
+}
+
+function renderSideNav() {
+  const nav = document.getElementById('sideNav');
+  if (!nav) return;
+  const items = [];
+  items.push({ kind: 'icon', icon: '<img src="copa.png" alt="">', target: 'nav-opening', title: 'Apertura · Págs. 0-3' });
+  items.push({ kind: 'divider' });
+  ['A','B','C','D','E','F'].forEach(L => {
+    items.push({
+      kind: 'group', letter: L, target: 'nav-group-' + L,
+      flags: GROUPS[L].map(t => `<img src="https://flagcdn.com/w20/${t.iso}.png" alt="${t.name}" title="${t.name}">`).join('')
+    });
+  });
+  items.push({ kind: 'icon', icon: '★', target: 'nav-extras-coca', title: 'Coca-Cola Stars', cls: 'coca' });
+  ['G','H','I','J','K','L'].forEach(L => {
+    items.push({
+      kind: 'group', letter: L, target: 'nav-group-' + L,
+      flags: GROUPS[L].map(t => `<img src="https://flagcdn.com/w20/${t.iso}.png" alt="${t.name}" title="${t.name}">`).join('')
+    });
+  });
+  items.push({ kind: 'divider' });
+  items.push({ kind: 'icon', icon: '<img src="copa.png" alt="">', target: 'nav-history', title: 'World Cup History' });
+
+  nav.innerHTML = items.map(it => {
+    if (it.kind === 'divider') return '<div class="side-nav-divider"></div>';
+    if (it.kind === 'icon') {
+      return `<button class="side-nav-item" data-target="${it.target}" title="${it.title}"><span class="nav-icon">${it.icon}</span></button>`;
+    }
+    return `<button class="side-nav-item" data-target="${it.target}" title="Grupo ${it.letter}"><span class="nav-letter">${it.letter}</span><span class="nav-flags">${it.flags}</span></button>`;
+  }).join('');
+
+  nav.querySelectorAll('.side-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.target);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 }
 
 function updateStats() {
