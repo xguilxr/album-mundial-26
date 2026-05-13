@@ -1224,6 +1224,7 @@
     <span class="sync-label">🔗 Sala</span>
     <input id="roomInput" class="sync-input" placeholder="ej. familia-glez (compartir entre dispositivos)" autocomplete="off">
     <button id="roomBtn" class="action-btn">Conectar</button>
+    <button id="fbConfigBtn" class="action-btn" title="Configurar Firebase (ver README)">⚙ Firebase</button>
     <span id="roomStatus" class="sync-status sync-offline">Solo local</span>
   </div>
 
@@ -2153,18 +2154,55 @@ if (brandSpan) {
 
 /* ============================================================
    SINCRONIZACIÓN EN VIVO (Firebase Realtime Database)
+   ----------------------------------------------------------
+   Cada usuario configura su propio proyecto Firebase (gratis) y
+   pega aquí su firebaseConfig. Ver instrucciones en el README.
    ============================================================ */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB5fUvL0QvO3JroHQymzqXL3QGlaGg2fLM",
-  authDomain: "album-mundial-26-317b4.firebaseapp.com",
-  databaseURL: "https://album-mundial-26-317b4-default-rtdb.firebaseio.com",
-  projectId: "album-mundial-26-317b4",
-  storageBucket: "album-mundial-26-317b4.firebasestorage.app",
-  messagingSenderId: "27203078665",
-  appId: "1:27203078665:web:42060a3a10282bb50646d8"
-};
 const ROOM_KEY = 'wc2026-album-room';
+const FB_CONFIG_KEY = 'wc2026-album-fbconfig';
 let fbApp = null, fbDb = null, roomRef = null, roomCode = '', applyingRemote = false;
+
+function getFirebaseConfig() {
+  try {
+    const raw = localStorage.getItem(FB_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function setFirebaseConfig() {
+  const existing = localStorage.getItem(FB_CONFIG_KEY) || '';
+  const example = '{\n  "apiKey": "...",\n  "authDomain": "...",\n  "databaseURL": "https://...firebaseio.com",\n  "projectId": "...",\n  "appId": "..."\n}';
+  const input = prompt(
+    'Pega tu firebaseConfig (objeto JSON). Ver pasos en el README.\n\nEjemplo:\n' + example,
+    existing
+  );
+  if (input === null) return;
+  const txt = input.trim();
+  if (!txt) {
+    localStorage.removeItem(FB_CONFIG_KEY);
+    leaveRoom();
+    showToast('Configuración de Firebase eliminada');
+    return;
+  }
+  // Acepta JSON con comillas o el objeto literal JS (apiKey: "...")
+  let cfg;
+  try { cfg = JSON.parse(txt); }
+  catch (_) {
+    try { cfg = Function('"use strict";return (' + txt + ')')(); }
+    catch (e) { showToast('JSON inválido — revisa el formato'); return; }
+  }
+  if (!cfg || !cfg.databaseURL) {
+    showToast('Falta databaseURL en el config');
+    return;
+  }
+  localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg));
+  // Reiniciar Firebase con el nuevo config
+  if (fbApp) {
+    try { fbApp.delete(); } catch (_) {}
+    fbApp = null; fbDb = null;
+  }
+  showToast('Firebase configurado — ahora pon un código de sala y conecta');
+}
 
 function setRoomStatus(state, text) {
   const el = document.getElementById('roomStatus');
@@ -2179,8 +2217,10 @@ function sanitizeRoom(code) {
 function ensureFirebase() {
   if (fbApp) return true;
   if (typeof firebase === 'undefined') return false;
+  const cfg = getFirebaseConfig();
+  if (!cfg) return false;
   try {
-    fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+    fbApp = firebase.initializeApp(cfg);
     fbDb = firebase.database();
     return true;
   } catch (e) {
@@ -2251,6 +2291,10 @@ document.getElementById('roomBtn').addEventListener('click', () => {
   if (roomRef) {
     leaveRoom();
   } else {
+    if (!getFirebaseConfig()) {
+      showToast('Primero configura Firebase (botón ⚙ — ver README)');
+      return;
+    }
     const code = document.getElementById('roomInput').value;
     if (!sanitizeRoom(code)) {
       showToast('Pon un código de sala (letras, números o guiones)');
@@ -2260,6 +2304,7 @@ document.getElementById('roomBtn').addEventListener('click', () => {
     btn.textContent = 'Desconectar';
   }
 });
+document.getElementById('fbConfigBtn').addEventListener('click', setFirebaseConfig);
 document.getElementById('roomInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('roomBtn').click();
 });
